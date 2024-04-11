@@ -1,0 +1,151 @@
+image:
+  name: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+stages:
+  - validate
+  - build
+  - deploy
+  - cleanup
+variables:
+  TF_ROOT: ./src
+  TF_STATE_NAME: default
+  TF_CACHE_KEY: default
+  PLAN_JSON: plan.json
+  CLIENT_NAME: "ara"
+
+include: 'helper.yml'
+validate-dev:
+  extends: .validate
+  variables:
+    DEPLOY_ENV: dev
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "main"'
+    
+validate-staging:
+  extends: .validate
+  variables:
+    DEPLOY_ENV: staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" || ($CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main")'
+
+validate-prod:
+  extends: .validate
+  variables:
+    DEPLOY_ENV: prod
+  only:
+    - main
+  only:
+    - tags
+
+build-dev:
+  extends: .build
+  variables:
+    DEPLOY_ENV: dev
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "main"'
+
+build-staging:
+  extends: .build
+  variables:
+    DEPLOY_ENV: staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" || ($CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main")'
+  
+build-prod:
+  extends: .build
+  variables:
+    DEPLOY_ENV: prod
+  only:
+    - main
+  only:
+    - tags
+  when: on_success 
+
+deploy-dev:
+  extends: .deploy
+  variables:
+    DEPLOY_ENV: dev
+  rules:
+    - if: '($CI_MERGE_REQUEST_EVENT_TYPE == "merged_result" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop") || $CI_COMMIT_BRANCH == "develop"'
+
+deploy-staging:
+  extends: .deploy
+  variables:
+    DEPLOY_ENV: staging
+  rules:
+    - if: '($CI_MERGE_REQUEST_EVENT_TYPE == "merged_result" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main") || $CI_COMMIT_BRANCH == "main"'
+
+destroy-dev:
+  extends: .destroy
+  variables:
+    DEPLOY_ENV: dev
+  rules:
+    - if: '($CI_MERGE_REQUEST_EVENT_TYPE == "merged_result" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop") || $CI_COMMIT_BRANCH == "develop"'
+    
+destroy-staging:
+  extends: .destroy
+  variables:
+    DEPLOY_ENV: staging
+  rules:
+    - if: '($CI_MERGE_REQUEST_EVENT_TYPE == "merged_result" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main") || $CI_COMMIT_BRANCH == "main"'
+
+deploy-prod:
+  extends: .deploy
+  variables:
+    DEPLOY_ENV: prod
+  only:
+    - main
+  only:
+    - tags
+  when: manual
+
+deploy-after-dev:
+  extends: .deploy
+  variables:
+    DEPLOY_ENV: dev
+  only:
+    - main
+  only:
+    - tags
+  when: manual
+
+deploy-after-staging:
+  extends: .deploy
+  variables:
+    DEPLOY_ENV: staging
+  only:
+    - main
+  only:
+    - tags
+  when: manual
+
+destroy-prod:
+  extends: .destroy
+  variables:
+    DEPLOY_ENV: prod
+  only:
+    - main
+  only:
+    - tags
+  when: manual
+
+destroy-after-dev:
+  extends: .destroy
+  variables:
+    DEPLOY_ENV: dev
+  only:
+    - main
+  only:
+    - tags
+  when: manual
+
+destroy-after-staging:
+  extends: .destroy
+  when: manual
+  variables:
+    DEPLOY_ENV: staging
+  only:
+    - main
+  only:
+    - tags
+  when: manual
+

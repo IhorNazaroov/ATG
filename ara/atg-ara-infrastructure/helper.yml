@@ -1,0 +1,46 @@
+.validate:
+  stage: validate
+  script:
+    - cd "${TF_ROOT}"
+    - git clone --branch $tag --single-branch https://oauth2:$terraform_token@gitlab.com/edalex-group/infrastructure/openatg-hosting/infrastructure-registry
+    - cp -v -f infrastructure-registry/src/*.tf . 
+    - cp maintf/oeq-server-${DEPLOY_ENV}.tf .
+    - terraform init
+    - terraform validate
+
+
+.build:
+  stage: build
+  script:
+    - cd "${TF_ROOT}"
+    - git clone --branch $tag --single-branch https://oauth2:$terraform_token@gitlab.com/edalex-group/infrastructure/openatg-hosting/infrastructure-registry
+    - cp -v -f infrastructure-registry/src/*.tf . 
+    - cp maintf/oeq-server-${DEPLOY_ENV}.tf .
+    - terraform init
+    - terraform plan
+
+
+.deploy:
+  stage: deploy
+  script:
+    - export TF_VAR_client_name="${TF_VAR_client_name}"
+    - cd "${TF_ROOT}"
+    - git clone --branch $tag --single-branch https://oauth2:$terraform_token@gitlab.com/edalex-group/infrastructure/openatg-hosting/infrastructure-registry
+    - cp -v -f infrastructure-registry/src/*.tf . 
+    - cp maintf/oeq-server-${DEPLOY_ENV}.tf .
+    - terraform init
+    - terraform apply -auto-approve -var-file=variables-${DEPLOY_ENV}.tfvars
+  resource_group: ${TF_STATE_NAME}
+  when: manual
+
+.destroy:
+  stage: cleanup
+  script:
+    - cd "${TF_ROOT}"
+    - git clone --branch $tag --single-branch https://oauth2:$terraform_token@gitlab.com/edalex-group/infrastructure/openatg-hosting/infrastructure-registry
+    - cp -v -f infrastructure-registry/src/*.tf . 
+    - cp maintf/oeq-server-${DEPLOY_ENV}.tf .
+    - terraform init
+    - terraform destroy -auto-approve -var-file=variables-${DEPLOY_ENV}.tfvars
+  resource_group: ${TF_STATE_NAME}
+  when: manual

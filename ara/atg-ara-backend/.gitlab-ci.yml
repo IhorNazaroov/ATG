@@ -1,0 +1,23 @@
+image:
+  name: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+
+stages:
+  - build
+  - deploy
+
+
+
+terraform_build:
+  stage: build
+  script:
+    - terraform init
+    - terraform plan 
+
+terraform_deploy:
+  stage: deploy
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+  when: manual 
+  only:
+    - main
